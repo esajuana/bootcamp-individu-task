@@ -19,6 +19,14 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+
+// untuk register user
+Route::post('register', [RegisterController::class, 'register']);
+
+// untuk login user
+Route::post('login', [LoginController::class, 'login'])->name('login');
+
 Route::middleware('auth:sanctum')->group(function () {
     // product routes
     Route::put('/products/restore/{id}', [ProductController::class, 'restore']);
@@ -38,9 +46,3 @@ Route::middleware('auth:sanctum')->group(function () {
     // untuk logout
     Route::post('logout', [LogoutController::class, 'logout']);
 });
-
-// untuk register user
-Route::post('register', [RegisterController::class, 'register']);
-
-// untuk login user
-Route::post('login', [LoginController::class, 'login'])->name('login');
