@@ -5,8 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
-
-class BrandStoreRequest extends FormRequest
+class UserUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,24 +23,30 @@ class BrandStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
-
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $this->user,
+            'password' => 'required|string|min:6',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:5048'
         ];
     }
 
-    /**
-     * Get the error messages for the defined validation rules.
-     *
-     * @return array<string, string>
-     */
+    
     public function messages(): array
     {
         return [
-            'name.required' => 'Nama brand harus diisi',
+            'name.required' => 'Nama wajib diisi.',
+            'name.string' => 'Nama harus berupa teks.',
+            'name.max' => 'Nama tidak boleh lebih dari :max karakter.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Email harus berupa alamat email yang valid.',
+            'email.unique' => 'Email sudah digunakan.',
+            'password.required' => 'Password wajib diisi.',
+            'password.string' => 'Password harus berupa teks.',
+            'password.min' => 'Password minimal :min karakter.',
+            'photo.required' => 'Foto harus diisi',
             'photo.image' => 'Foto harus berupa gambar',
             'photo.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
-            'photo.max' => 'Ukuran gambar tidak boleh lebih dari 5MB',        
+            'photo.max' => 'Ukuran gambar tidak boleh lebih dari 5MB',
         ];
     }
 
@@ -49,8 +54,10 @@ class BrandStoreRequest extends FormRequest
     {
         throw new HttpResponseException(response()->json([
             'success' => false,
-            'message' => 'validation error',
+            'message' => 'Validation errors',
             'data' => $validator->errors()
         ], 422));
     }
 }
+
+

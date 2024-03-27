@@ -6,6 +6,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,11 +28,13 @@ Route::post('register', [RegisterController::class, 'register']);
 // untuk login user
 Route::post('login', [LoginController::class, 'login'])->name('login');
 
+Route::get('/products', [ProductController::class, 'index']);
+
 Route::middleware('auth:sanctum')->group(function () {
     // product routes
     Route::put('/products/restore/{id}', [ProductController::class, 'restore']);
     Route::get('products/deleted', [ProductController::class, 'getSoftDelete']);
-    Route::resource('products', ProductController::class);
+    Route::resource('products', ProductController::class)->except(['index']);
 
     // category routes
     Route::put('/categories/restore/{id}', [CategoryController::class, 'restore']);
@@ -42,6 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/brand/restore/{id}', [BrandController::class, 'restore']);
     Route::get('brand/deleted', [BrandController::class, 'trash']);
     Route::resource('brand', BrandController::class);
+
+
+    // user routes
+    Route::resource('users', UserController::class);
 
     // untuk logout
     Route::post('logout', [LogoutController::class, 'logout']);

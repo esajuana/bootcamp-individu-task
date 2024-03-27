@@ -25,6 +25,8 @@ class BrandUpdateRequest extends FormRequest
     {
         return [
             'name' => 'required',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
+
         ];
     }
 
@@ -37,6 +39,9 @@ class BrandUpdateRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama brand harus diisi',
+            'photo.image' => 'Foto harus berupa gambar',
+            'photo.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
+            'photo.max' => 'Ukuran gambar tidak boleh lebih dari 5MB',        
         ];
     }
 

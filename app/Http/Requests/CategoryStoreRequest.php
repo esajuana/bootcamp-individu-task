@@ -25,6 +25,7 @@ class CategoryStoreRequest extends FormRequest
     {
         return [
             'name' => 'required|string|unique:categories|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
         ];
     }
 
@@ -35,6 +36,9 @@ class CategoryStoreRequest extends FormRequest
             'name.string' => 'Kolom nama harus berupa teks.',
             'name.unique' => 'Nama sudah digunakan.',
             'name.max' => 'Panjang nama tidak boleh lebih dari :max karakter.',
+            'photo.image' => 'Foto harus berupa gambar',
+            'photo.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
+            'photo.max' => 'Ukuran gambar tidak boleh lebih dari 5MB',
         ];
     }
 

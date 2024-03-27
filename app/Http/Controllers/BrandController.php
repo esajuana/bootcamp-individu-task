@@ -7,6 +7,8 @@ use App\Models\Brand;
 use App\Http\Requests\BrandStoreRequest;
 use App\Http\Requests\BrandUpdateRequest;
 use App\Traits\JsonResponseTrait;
+use App\Http\Resources\BrandResource;
+
 
 class BrandController extends Controller
 {
@@ -18,20 +20,23 @@ class BrandController extends Controller
     {
         $brands = Brand::all();
 
-        return $this->showResponse($brands->toArray());
+        return BrandResource::collection($brands);
+    
     }
     /**
      * Store a newly created resource in storage.
      */
     public function store(BrandStoreRequest $request)
     {
-        if ($request->validated()) {
-            $brand = Brand::create($request->all());
+        $validated = $request->validated();
+        $brand = Brand::create($validated);
 
-            return $this->createdResponse($brand->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos');
+            $brand->addImage($photoPath);
         }
+
+        return response()->json(['message' => 'Brand created successfully'], 201);
     }
 
     /**
@@ -39,9 +44,13 @@ class BrandController extends Controller
      */
     public function show($id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::with('image')->find($id);
 
-        return $this->showResponse($brand->toArray());
+        if ($brand) {
+            return BrandResource::make($brand)->withDetail();
+        } else {
+            return response()->json(['message' => 'Brand  tidak ditemukan'], 404);
+        }
     }
 
     /**
@@ -49,14 +58,16 @@ class BrandController extends Controller
      */
     public function update(BrandUpdateRequest $request, $id)
     {
-        if ($request->validated()) {
-            $brand = Brand::findOrFail($id);
-            $brand->update($request->all());
+        $validated = $request->validated();
+        $brand = Brand::find($id);
 
-            return $this->updatedResponse($brand->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        if (!$brand) {
+            return response()->json(['message' => 'Brand  tidak ditemukan'], 404);
         }
+        $brand->update($validated);
+        $brand->updateImage($request);
+
+        return response()->json(['message' => 'Brand  berhasil diupdate', 'brand' => $brand]);
     }
 
     /**
@@ -64,10 +75,10 @@ class BrandController extends Controller
      */
     public function destroy($id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = brand::findOrFail($id);
         $brand->delete();
 
-        return $this->deletedResponse($brand->toArray());
+        return response()->json(['message' => 'Brand  berhasil dihapus']);
     }
 
     /**
@@ -76,8 +87,8 @@ class BrandController extends Controller
     public function trash()
     {
         $brands = Brand::onlyTrashed()->get();
-
-        return $this->showResponse($brands->toArray());
+        // return $this->showResponse($brands->toArray());
+        return response()->json(['message'=> 'Data berhasil diambil','brand'=> $brands]);
     }
 
     /**

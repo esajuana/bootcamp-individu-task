@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Models\Image;
+use App\Http\Resources\CategoryResource;
 use App\Http\Requests\CategoryStoreRequest;
 use App\Http\Requests\CategoryUpdateRequest;
 use App\Models\Category;
+use Illuminate\Http\UploadedFile;
 use App\Traits\JsonResponseTrait;
+
 class CategoryController extends Controller
 {
     use JsonResponseTrait;
@@ -28,12 +33,15 @@ class CategoryController extends Controller
      */
     public function store(CategoryStoreRequest $request)
     {
-        if ($request->validated()) {
-            $category = Category::create($request->all());
-            return $this->createdResponse($category->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        $validated = $request->validated();
+        $category = Category::create($validated);
+
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos');
+            $category->addImage($photoPath);
         }
+
+        return response()->json(['message' => 'category created successfully'], 201);
     }
 
     /**
@@ -41,23 +49,31 @@ class CategoryController extends Controller
      */
     public function show($id)
     {
-        $category = Category::findOrFail($id);
-       
-        return $this->showResponse($category->toArray());
+        $category = Category::with('image')->find($id);
+
+        if ($category) {
+            return CategoryResource::make($category)->withDetail();
+        } else {
+            return response()->json(['message' => 'Category tidak ditemukan'], 404);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(CategoryUpdateRequest $request,  $id)
+    public function update(CategoryUpdateRequest $request,  $id): JsonResponse
     {
-        if ($request->validated()) {
-            $category = Category::findOrFail($id);
-            $category->update($request->all());
-            return $this->updatedResponse($category->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        $validated = $request->validated();
+        $category = Category::find($id);
+
+        if (!$category) {
+            return response()->json(['message' => 'category tidak ditemukan'], 404);
         }
+
+        $category->update($validated);
+        $category->updateImage($request);
+
+        return response()->json(['message' => 'Category berhasil diupdate', 'category' => $category]);
     }
 
     /**
@@ -67,7 +83,8 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
         $category->delete();
-        return $this->deletedResponse($category->toArray());
+
+        return response()->json(['message' => 'Category deleted successfully']);
     }
 
      /**
@@ -83,6 +100,7 @@ class CategoryController extends Controller
     {
         $category = Category::withTrashed()->findOrFail($id);
         $category->restore();
-        return $this->restoredResponse($category->toArray());
+
+        return response()->json(['message' => 'Produk berhasil dipulihkan.']);
     }
 }

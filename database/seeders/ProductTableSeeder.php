@@ -23,7 +23,8 @@ class ProductTableSeeder extends Seeder
                     'price' => $faker->randomNumber(2),
                     'stock' => $faker->randomNumber(2),
                     'category_id' => $i,
-                    'brand_id' => $faker->numberBetween(1, 10)
+                    'brand_id' => $faker->numberBetween(1, 10),
+                    'user_id' => $faker->numberBetween(1,2)
                 ]);
             }
         }

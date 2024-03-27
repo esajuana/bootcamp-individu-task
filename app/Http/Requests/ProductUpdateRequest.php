@@ -28,7 +28,10 @@ class ProductUpdateRequest extends FormRequest
             'name' => 'required|string',
             'price' => 'required|numeric',
             'stock' => 'required|integer', 
-            'category_id' => 'required|exists:categories,id'  
+            'category_id' => 'required|exists:categories,id',
+            'brand_id'=>'required|integer',
+            'user_id'=>'required|integer',
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:5048'
         ];
     }
 
@@ -41,6 +44,14 @@ class ProductUpdateRequest extends FormRequest
             'price.numeric' => 'Harga produk harus berupa angka.',
             'stock.required' => 'Stok produk wajib diisi.',
             'stock.integer' => 'Stok produk harus berupa bilangan bulat.',
+            'brand_id.required' => 'ID Merek harus diisi',
+            'brand_id.integer' => 'ID Merek harus berupa angka',
+            'user_id.required' => 'ID Pengguna harus diisi',
+            'user_id.integer' => 'ID Pengguna harus berupa angka',
+            'photo.required' => 'Foto harus diisi',
+            'photo.image' => 'Foto harus berupa gambar',
+            'photo.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
+            'photo.max' => 'Ukuran gambar tidak boleh lebih dari 5MB',
         ];
     }
     public function failedValidation(validator $validator)

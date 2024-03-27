@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
+use App\Http\Resources\ProductResource;
 use App\Traits\JsonResponseTrait;
+use Illuminate\Support\Facades\Auth;
+
 
 class ProductController extends Controller
 {
@@ -16,40 +20,39 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $products = Product::with('category', 'brand');
+        $user = auth('sanctum')->user();
+        $products = Product::with('category', 'brand', 'images', 'user');
 
-        // search mechanism
-        if ($request->has('search') && $request->search !== '') {
+        // check if the user is authenticated
+        if ($user) {
+            $products = $products->where('user_id', $user->id);
+        }
+
+         // check if the user is searching for a product
+         if ($request->has('search')) {
             $products = $products->where('name', 'like', '%' . $request->search . '%');
         }
 
-        // sort mechanism. Allows sorting by name, and price in ascending or descending order
-        if ($request->has('sort')) {
-            $sortField = $request->input('sort', 'name');  // default is to sort by name
-            $sortDirection = $request->input('direction', 'asc');  // default is to sort in ascending order
-            $products = $products->orderBy($sortField, $sortDirection);
+         // check if the user is filtering by brand
+         if ($request->has('brand')) {
+            $products = $products->where('brand_id', $request->brand);
         }
 
-        // filter mechanism. Allows filtering by category id and price range
-        // filter by category id
-        if ($request->has('category_id')) {
-            $products = $products->where('category_id', $request->category_id);
+        // check if the user is filtering by price range
+        if ($request->has('min_price') && $request->has('max_price')) {
+            $products = $products->whereBetween('price', [$request->min_price, $request->max_price]);
         }
 
-        // filter by brand
-        if ($request->has('brand_id')) {
-            $products = $products->where('brand_id', $request->brand_id);
-        }
-
-        // filter by price range
-        if ($request->has('price_min') && $request->has('price_max')) {
-            $products = $products->whereBetween('price', [$request->price_min, $request->price_max]);
+        // check if the user is sorting the products by name, and price in ascending or descending
+        if ($request->has('sort_by')) {
+            $sortOrder = $request->has('sort_order') ? $request->sort_order : 'asc';
+            $products = $products->orderBy($request->sort_by, $sortOrder);
         }
 
         // pagination mechanism
-        $products = $products->paginate(10);   // get 10 products per page
+        $products = $products->paginate(10);   
 
-        return $this->showResponse($products->toArray());
+       return ProductResource::collection($products);
     }
     
     /**
@@ -57,13 +60,16 @@ class ProductController extends Controller
      */
     public function store(ProductStoreRequest $request)
     {
-        if ($request->validated()) {
-            $product = Product::create($request->all());
-            return $this->createdResponse($product->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        $validated = $request->validated();
+        $product = Product::create($validated);
+
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos');
+            $product->addImage($photoPath);
         }
-        
+
+        return response()->json(['message' => 'Produk created successfully'], 201);
+
     }
 
     /**
@@ -71,10 +77,12 @@ class ProductController extends Controller
      */
     public function show(string $id)
     {
-        $product = Product::findOrFail($id);
-        $product->category_id = $product->category->name;
-        $product->brand_id = $product->brand->name;
-        return $this->showResponse($product->toArray());
+        $product = Product::with('image')->find($id);
+        if ($product) {
+            return ProductResource::make($product)->withDetail();
+        } else {
+            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
+        }
 
     }
 
@@ -83,14 +91,19 @@ class ProductController extends Controller
      */
     public function update(ProductUpdateRequest $request, string $id)
     {
-        if ($request->validated()) {
-            $product = Product::findOrFail($id);
+        $validated = $request->validated();
+        $product = Product::find($id);
 
-            $product->update($request->all());
-            return $this->updatedResponse($product->toArray());
-        } else {
-            return $this->validationErrorResponse($request->errors());
+        if (!$product) {
+            return response()->json(['message' => 'Product tidak ditemukan'], 404);
         }
+        if ($product->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Anda tidak memiliki izin untuk memperbarui produk ini'], 403);
+        }
+        $product->update($validated);
+        $product->updateImage($request);
+
+        return response()->json(['message' => 'Produk berhasil diupdate', 'produk' => $product]);
     }
 
     /**
